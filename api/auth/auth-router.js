@@ -48,7 +48,7 @@ router.post('/register', checkBody, (req, res) => {
 router.post('/login', checkBody, (req, res) => {
   getUserByUsername(req.body.username)
     .then(data => {
-      if (!data || !bcrypt.hashSync(req.body.password, data.password)) {
+      if (!data || !bcrypt.compareSync(req.body.password, data.password)) {
         res.status(401).json("invalid credentials");
       } else {
         const token = generateToken(data);
