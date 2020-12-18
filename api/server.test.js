@@ -1,22 +1,34 @@
 const request = require('supertest');
 const server = require('./server');
-const db = require("../data/dbconfig");
+const db = require("../data/dbConfig");
 
 const testUser = { username: "goose", password: "honk" };
 const testUser2 = { username: "villager", password: "No Geese" };
 
 beforeAll(async () => {
-  await db.migrate.rollback();
-  await db.migrate.latest();
-
-});
-
-afterAll(async () => {
-  await db.destroy();
-});
+  await db.migrate.rollback()
+  await db.migrate.latest()
+})
+afterAll(async (done) => {
+  await db.destroy()
+  done()
+})
 
 describe('server.js', () => {
   describe('register endpoint', () => {
+    beforeEach(async () => {
+      await db('users').truncate();
+    });
+    it('adds a new user with a bcrypted password to the users table on success', async () => {
+      await request(server).post('/api/auth/register').send(testUser)
+      const user = await db('users').first()
+      expect(user).toExist()
+      // expect(user).toHaveProperty('id')
+      // expect(user).toHaveProperty('username')
+      // expect(user).toHaveProperty('password')
+      // expect(user.password).toMatch(/^\$2[ayb]\$.{56}$/)
+      // expect(user.username).toBe(userA.username)
+    }, 500)
     it('should return 201 if successful', async () => {
       const res = await request(server).post("/api/auth/register").send(testUser);
       expect(res.status).toBe(201);
@@ -28,6 +40,10 @@ describe('server.js', () => {
   });
 
   describe('login endpoint', () => {
+    beforeEach(async () => {
+      await db('users').truncate();
+      await request(server).post('/api/auth/register').send(testUser);
+    });
     it('should return 200 if successful', async () => {
       const res = await request(server).post("/api/auth/login").send(testUser);
       expect(res.status).toBe(200);
@@ -40,17 +56,18 @@ describe('server.js', () => {
   });
 
   describe('jokes endpoint', () => {
+    beforeEach(async () => {
+      await db('users').truncate();
+      await request(server).post('/api/auth/register').send(testUser);
+    });
     it('should return 200 if successful', async () => {
-      const login = await request(server).post("/api/auth/login").send(testUser);
-      const token = login.body.token;
-      console.log(token)
-      const res = await request(server).get("/api/jokes").set("Authorization", `Bearer ${token}`);
+      const { body: { token } } = await request(server).post('/api/auth/login').send(testUser)
+      const res = await request(server).get("/api/jokes").set("Authorization", token)
       expect(res.status).toBe(200);
     });
     it('should return json object', async () => {
-      const login = await request(server).post("/api/auth/login").send(testUser);
-      const token = login.body.token;
-      const res = await request(server).get("/api/jokes").set("Authorization", `Bearer ${token}`);
+      const { body: { token } } = await request(server).post('/api/auth/login').send(testUser)
+      const res = await request(server).get("/api/jokes").set("Authorization", token);
       expect(res.type).toEqual('application/json');
     });
   });
