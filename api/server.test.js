@@ -1,6 +1,6 @@
 const request = require('supertest');
-const server = require('./api/server');
-const db = require("./data/dbconfig");
+const server = require('./server');
+const db = require("../data/dbconfig");
 
 const testUser = {username: "goose", password: "honk"}
 
@@ -10,48 +10,44 @@ beforeAll(async () => {
 
 });
 beforeEach(async () => {
-  await db('resource').truncate();
-  await db.seed.run();
+  await db('users').truncate();
+  // await db.seed.run();
 });
 afterAll(async () => {
   await db.destroy();
 });
 
-test('sanity', () => {
-  expect(true).toBe(false);
-});
-
 describe('server.js', () => {
   describe('register endpoint', () => {
-    it('should return 201 if successful', () => {
-      const res = await request(server).post("/register").send(testUser);
+    it('should return 201 if successful', async () => {
+      const res = await request(server).post("/api/auth/register").send(testUser);
       expect(res.status).toBe(201);
     })
-    it('should return user created', () => {
-      const res = await request(server).post("/register").send(testUser);
-      expect(res.body).toBe(testUser);
+    it('should return user created', async () => {
+      const res = await request(server).post("/api/auth/register").send(testUser);
+      expect(res.body.username).toBe(testUser.username);
     })
   });
 
   describe('login endpoint', () => {
-    it('should return 200 if successful', () => {
-      const res = await request(server).post("/login").send(testUser);
+    it('should return 200 if successful', async () => {
+      const res = await request(server).post("/api/auth/login").send(testUser);
       expect(res.status).toBe(200);
     })
-    it('should return token', () => {
-      const res = await request(server).post("/login").send(testUser);
+    it('should return token', async () => {
+      const res = await request(server).post("/api/auth/login").send(testUser);
       const keys = Object.keys(res.body)
       expect(keys).toContain("token");
     })
   });
 
   describe('jokes endpoint', () => {
-    it('should return 201 if successful', () => {
-      const res = await request(server).get("/jokes");
+    it('should return 200 if successful', async () => {
+      const res = await request(server).get("/api/jokes");
       expect(res.status).toBe(200);
     })
-    it('should return user created', () => {
-      const res = await request(server).get("/jokes");
+    it('should return json object', async () => {
+      const res = await request(server).get("/api/jokes");
       expect(res.type).toEqual('application/json');
     })
   });

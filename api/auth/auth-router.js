@@ -1,7 +1,22 @@
 const router = require('express').Router();
+const bcrypt = require("bcryptjs")
+const { getUserByUsername, addUser } = require("./auth-models");
 
-router.post('/register', (req, res) => {
-  res.end('implement register, please!');
+router.post('/register', checkBody, (req, res) => {
+  getUserByUsername(req.body.username)
+    .then(data => {
+      if (data) {
+        res.status(400).json("username taken")
+      } else {
+        const credentials = req.body;
+        const hash = bcrypt.hashSync(credentials.password, 14);
+        credentials.password = hash;
+        addUser(credentials)
+          .then(data => { 
+            res.status(201).json(data);
+          })
+      }
+    })
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -28,7 +43,7 @@ router.post('/register', (req, res) => {
   */
 });
 
-router.post('/login', (req, res) => {
+router.post('/login', checkBody, (req, res) => {
   res.end('implement login, please!');
   /*
     IMPLEMENT
@@ -54,5 +69,13 @@ router.post('/login', (req, res) => {
       the response body should include a string exactly as follows: "invalid credentials".
   */
 });
+
+function checkBody(req, res, next) {
+  if (!req.body.password || !req.body.username) {
+    res.status(500).json("username and password required");
+  } else {
+    next();
+  }
+}
 
 module.exports = router;
