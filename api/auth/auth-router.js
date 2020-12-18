@@ -1,22 +1,24 @@
 const router = require('express').Router();
-const bcrypt = require("bcryptjs")
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const secrets = require("../../config/secrets");
 const { getUserByUsername, addUser } = require("./auth-models");
 
 router.post('/register', checkBody, (req, res) => {
   getUserByUsername(req.body.username)
     .then(data => {
       if (data) {
-        res.status(400).json("username taken")
+        res.status(400).json("username taken");
       } else {
         const credentials = req.body;
         const hash = bcrypt.hashSync(credentials.password, 14);
         credentials.password = hash;
         addUser(credentials)
-          .then(data => { 
+          .then(data => {
             res.status(201).json(data);
-          })
+          });
       }
-    })
+    });
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -44,7 +46,19 @@ router.post('/register', checkBody, (req, res) => {
 });
 
 router.post('/login', checkBody, (req, res) => {
-  res.end('implement login, please!');
+  getUserByUsername(req.body.username)
+    .then(data => {
+      if (!data || !bcrypt.hashSync(req.body.password, data.password)) {
+        res.status(401).json("invalid credentials");
+      } else {
+        const token = generateToken(data);
+        res.status(200).json({
+          message: `Welcome ${data.username}! Have a token...`,
+          token, // attach the token as part of the response
+        });
+
+      }
+    });
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -76,6 +90,16 @@ function checkBody(req, res, next) {
   } else {
     next();
   }
+}
+
+function generateToken(user) {
+  const payload = {
+    subject: user.username
+  };
+  const options = {
+    expiresIn: '1d'
+  };
+  return jwt.sign(payload, secrets.jwtSecret, options);
 }
 
 module.exports = router;
