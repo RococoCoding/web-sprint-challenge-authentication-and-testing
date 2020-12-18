@@ -19,16 +19,6 @@ describe('server.js', () => {
     beforeEach(async () => {
       await db('users').truncate();
     });
-    it('adds a new user with a bcrypted password to the users table on success', async () => {
-      await request(server).post('/api/auth/register').send(testUser)
-      const user = await db('users').first()
-      expect(user).toExist()
-      // expect(user).toHaveProperty('id')
-      // expect(user).toHaveProperty('username')
-      // expect(user).toHaveProperty('password')
-      // expect(user.password).toMatch(/^\$2[ayb]\$.{56}$/)
-      // expect(user.username).toBe(userA.username)
-    }, 500)
     it('should return 201 if successful', async () => {
       const res = await request(server).post("/api/auth/register").send(testUser);
       expect(res.status).toBe(201);
